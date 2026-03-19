@@ -359,19 +359,24 @@ def get_statistics():
         cities = request.args.get('cities', '')
         cities = [c.strip() for c in cities.split(',') if c.strip()] if cities else None
 
+        # Обработка фильтра "Регионы" (все города кроме Москвы)
+        if cities and 'Регионы' in cities:
+            from config import CITIES
+            cities = [c for c in CITIES if c != 'Москва']
+
         # Обработка дат из календаря
         date_from = None
         date_to = None
-        
+
         date_from_str = request.args.get('date_from', '')
         date_to_str = request.args.get('date_to', '')
-        
+
         if date_from_str:
             try:
                 date_from = datetime.strptime(date_from_str, '%Y-%m-%d')
             except ValueError:
                 pass
-        
+
         if date_to_str:
             try:
                 date_to = datetime.strptime(date_to_str, '%Y-%m-%d')

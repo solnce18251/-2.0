@@ -838,9 +838,8 @@
                     <div class="filter-group">
                         <label>Город</label>
                         <select id="city" onchange="loadData()">
-                            <option value="Россия">Россия (все)</option>
                             <option value="Москва">Москва</option>
-                            <option value="Санкт-Петербург">Санкт-Петербург</option>
+                            <option value="Регионы">Регионы</option>
                         </select>
                     </div>
 
@@ -1266,8 +1265,14 @@
                 params.append('role_ids', selectedRoles.join(','));
             }
 
+            // Обработка фильтра городов
             if (city) {
-                params.append('cities', city);
+                if (city === 'Регионы') {
+                    // Для регионов передаем все города кроме Москвы
+                    params.append('cities', 'Регионы');
+                } else {
+                    params.append('cities', city);
+                }
             }
 
             if (level !== 'all') {
@@ -1649,7 +1654,7 @@
         function resetFilters() {
             setPresetDate('7d', document.querySelector('.preset-btn'));
             document.getElementById('year').value = 'all';
-            document.getElementById('city').value = 'Россия';
+            document.getElementById('city').value = 'Москва';
             document.getElementById('level').value = 'all';
             selectedRoles = [];
 
