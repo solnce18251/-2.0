@@ -102,15 +102,29 @@ def parse_role(role_id: str, city: str = 'Москва', pages: int = 5):
 def run_server(host: str = '127.0.0.1', port: int = 5000, debug: bool = False):
     """
     Запуск веб-сервера
-    
+
     Args:
         host: Хост
         port: Порт
         debug: Режим отладки
     """
     from server import app
-    logger.info(f"Запуск сервера на {host}:{port}")
-    app.run(host=host, port=port, debug=debug)
+    
+    if debug:
+        # Development режим (Flask)
+        logger.info(f"Запуск development сервера на {host}:{port}")
+        app.run(host=host, port=port, debug=debug)
+    else:
+        # Production режим (Waitress)
+        try:
+            from waitress import serve
+            logger.info(f"Запуск production сервера (Waitress) на {host}:{port}")
+            logger.info(f"Откройте в браузере: http://{host}:{port}")
+            serve(app, host=host, port=port, threads=4)
+        except ImportError:
+            logger.warning("Waitress не установлен, используется Flask development сервер")
+            logger.info(f"Запуск сервера на {host}:{port}")
+            app.run(host=host, port=port, debug=debug)
 
 
 def show_stats():

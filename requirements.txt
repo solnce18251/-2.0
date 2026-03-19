@@ -19,6 +19,7 @@ aiosqlite==0.19.0
 flask==3.0.2
 flask-cors==4.0.0
 flask-socketio==5.3.6
+waitress==3.0.0
 
 # Визуализация и отчёты
 plotly==5.19.0
