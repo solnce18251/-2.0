@@ -1389,8 +1389,20 @@
                 const response = await fetch('/api/statistics/trend?' + params.toString());
                 const data = await response.json();
 
+                // Форматирование месяцев для оси X (Янв 2026, Фев 2026 и т.д.)
+                const monthNames = {
+                    '01': 'Янв', '02': 'Фев', '03': 'Мар', '04': 'Апр',
+                    '05': 'Май', '06': 'Июн', '07': 'Июл', '08': 'Авг',
+                    '09': 'Сен', '10': 'Окт', '11': 'Ноя', '12': 'Дек'
+                };
+
                 const trace = {
-                    x: data.map(d => d.month),
+                    x: data.map(d => {
+                        // Преобразуем YYYY-MM в "Янв 2026"
+                        const [year, month] = d.month.split('-');
+                        const monthName = monthNames[month] || month;
+                        return `${monthName} ${year}`;
+                    }),
                     y: data.map(d => d.median || 0),
                     type: 'scatter',
                     mode: 'lines+markers',
@@ -1410,8 +1422,12 @@
                     paper_bgcolor: 'rgba(0,0,0,0)',
                     plot_bgcolor: 'rgba(0,0,0,0)',
                     font: { color: '#F0F6FC', family: 'Inter' },
-                    margin: { l: 60, r: 50, t: 20, b: 50 },
-                    xaxis: { gridcolor: '#30363D' },
+                    margin: { l: 60, r: 50, t: 20, b: 60 },
+                    xaxis: {
+                        gridcolor: '#30363D',
+                        tickangle: -45,
+                        tickfont: { size: 11 }
+                    },
                     yaxis: {
                         title: 'Медианная зарплата (RUB)',
                         gridcolor: '#30363D'
