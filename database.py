@@ -2,14 +2,16 @@
 Модуль работы с базой данных
 """
 import logging
+import json
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List, Dict
 from sqlalchemy import create_engine, func, and_, or_
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import StaticPool
 
 from config import DATABASE_URL
 from models.vacancy import Vacancy, Base
+from models.market import Resume, VacancyStatistic, ResumeStatistic
 
 logger = logging.getLogger(__name__)
 
@@ -296,6 +298,159 @@ class Database:
             return []
         finally:
             session.close()
+
+    # Методы для работы с резюме
+    def add_resumes_batch(self, resumes: List[dict]) -> int:
+        """Пакетное добавление резюме"""
+        session = self.get_session()
+        try:
+            # Проверка на дубликаты по URL
+            existing_urls = set()
+            if resumes:
+                urls = [r.get('url') for r in resumes if r.get('url')]
+                if urls:
+                    existing = session.query(Resume.url).filter(
+                        Resume.url.in_(urls)
+                    ).all()
+                    existing_urls = {row[0] for row in existing}
+
+            # Добавление новых
+            new_resumes = []
+            for r in resumes:
+                if not r.get('url') or r['url'] not in existing_urls:
+                    resume = Resume(
+                        title=r.get('title', ''),
+                        salary_min=r.get('salary_min'),
+                        salary_max=r.get('salary_max'),
+                        currency=r.get('currency', 'RUB'),
+                        city=r.get('city', 'Россия'),
+                        experience_years=r.get('experience_years'),
+                        experience_description=r.get('experience_description', ''),
+                        role_id=r.get('role_id', ''),
+                        level=r.get('level', ''),
+                        skills=r.get('skills', ''),
+                        source=r.get('source', ''),
+                        url=r.get('url'),
+                        published_at=r.get('published_at', datetime.utcnow()),
+                        updated_at=r.get('updated_at'),
+                    )
+                    new_resumes.append(resume)
+
+            if new_resumes:
+                session.bulk_save_objects(new_resumes)
+                session.commit()
+                logger.info(f"Добавлено {len(new_resumes)} резюме")
+                return len(new_resumes)
+
+            return 0
+
+        except Exception as e:
+            session.rollback()
+            logger.error(f"Ошибка добавления резюме: {e}")
+            return 0
+        finally:
+            session.close()
+
+    def get_resume_statistics(self,
+                               role_ids: Optional[List[str]] = None,
+                               levels: Optional[List[str]] = None,
+                               cities: Optional[List[str]] = None,
+                               date_from: Optional[datetime] = None,
+                               date_to: Optional[datetime] = None) -> dict:
+        """Получение статистики по резюме"""
+        session = self.get_session()
+        try:
+            query = session.query(Resume.salary_min, Resume.salary_max)
+
+            filters = []
+
+            if role_ids:
+                filters.append(Resume.role_id.in_(role_ids))
+
+            if levels:
+                filters.append(Resume.level.in_(levels))
+
+            if cities:
+                filters.append(Resume.city.in_(cities))
+
+            if date_from:
+                filters.append(Resume.published_at >= date_from)
+
+            if date_to:
+                filters.append(Resume.published_at <= date_to)
+
+            if filters:
+                query = query.filter(and_(*filters))
+
+            results = query.all()
+
+            if not results:
+                return {'count': 0}
+
+            # Вычисление средней зарплаты
+            salaries = []
+            for salary_min, salary_max in results:
+                if salary_min and salary_max:
+                    salaries.append((salary_min + salary_max) / 2)
+                elif salary_min:
+                    salaries.append(salary_min)
+                elif salary_max:
+                    salaries.append(salary_max)
+
+            if not salaries:
+                return {'count': len(results)}
+
+            salaries.sort()
+            n = len(salaries)
+
+            p25_idx = int(n * 0.25)
+            p50_idx = int(n * 0.50)
+            p75_idx = int(n * 0.75)
+
+            return {
+                'count': n,
+                'min': int(salaries[0]) if salaries else 0,
+                'p25': int(salaries[p25_idx]) if p25_idx < n else 0,
+                'median': int(salaries[p50_idx]) if p50_idx < n else 0,
+                'p75': int(salaries[p75_idx]) if p75_idx < n else 0,
+                'max': int(salaries[-1]) if salaries else 0,
+                'average': int(sum(salaries) / n) if salaries else 0,
+            }
+
+        except Exception as e:
+            logger.error(f"Ошибка получения статистики резюме: {e}")
+            return {'count': 0}
+        finally:
+            session.close()
+
+    def get_market_overview(self,
+                             role_ids: Optional[List[str]] = None,
+                             levels: Optional[List[str]] = None,
+                             cities: Optional[List[str]] = None,
+                             date_from: Optional[datetime] = None,
+                             date_to: Optional[datetime] = None) -> dict:
+        """Получение обзора рынка: вакансии + резюме"""
+        vacancy_stats = self.get_salary_statistics(
+            role_ids=role_ids,
+            levels=levels,
+            cities=cities,
+            date_from=date_from,
+            date_to=date_to
+        )
+
+        resume_stats = self.get_resume_statistics(
+            role_ids=role_ids,
+            levels=levels,
+            cities=cities,
+            date_from=date_from,
+            date_to=date_to
+        )
+
+        return {
+            'vacancies': vacancy_stats,
+            'resumes': resume_stats,
+            'ratio': resume_stats.get('count', 0) / max(vacancy_stats.get('count', 1), 1),
+        }
 
     def close(self):
         """Закрытие соединения"""

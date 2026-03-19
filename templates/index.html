@@ -923,6 +923,33 @@
 
             <!-- Charts -->
             <div class="charts-grid">
+                <!-- Market Overview -->
+                <div class="chart-container full-width">
+                    <div class="chart-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18M7 16l4-4 4 4 5-6"/>
+                        </svg>
+                        <h3>Обзор рынка: Вакансии vs Резюме</h3>
+                    </div>
+                    <div class="stats-cards" id="market-overview" style="margin-top: 20px;">
+                        <div class="stat-card">
+                            <div class="value" id="market-vacancies">-</div>
+                            <div class="label">Вакансий</div>
+                            <div class="sublabel">Активные вакансии</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value" id="market-resumes">-</div>
+                            <div class="label">Резюме</div>
+                            <div class="sublabel">Активные резюме</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="value" id="market-ratio">-</div>
+                            <div class="label">Конкуренция</div>
+                            <div class="sublabel">Резюме на вакансию</div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="chart-container full-width">
                     <div class="chart-title">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1216,9 +1243,48 @@
                 updateLevelChart(data.by_level);
                 updateCityChart(data.by_city);
                 updateTrendChart();
+                updateMarketOverview(data.overall);
 
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
+            }
+        }
+
+        // Обновление обзора рынка
+        async function updateMarketOverview(currentStats) {
+            try {
+                const params = new URLSearchParams();
+                
+                const city = document.getElementById('city').value;
+                if (city) {
+                    params.append('cities', city);
+                }
+                
+                const level = document.getElementById('level').value;
+                if (level !== 'all') {
+                    params.append('levels', level);
+                }
+                
+                const { dateFrom, dateTo } = getDateRange();
+                if (dateFrom) {
+                    params.append('date_from', dateFrom);
+                }
+                if (dateTo) {
+                    params.append('date_to', dateTo);
+                }
+
+                const response = await fetch('/api/market/overview?' + params.toString());
+                const data = await response.json();
+
+                if (data.vacancies && data.resumes) {
+                    document.getElementById('market-vacancies').textContent = data.vacancies.count || 0;
+                    document.getElementById('market-resumes').textContent = data.resumes.count || 0;
+                    
+                    const ratio = data.ratio || 0;
+                    document.getElementById('market-ratio').textContent = ratio.toFixed(1);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки обзора рынка:', error);
             }
         }
 

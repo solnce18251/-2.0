@@ -9,6 +9,7 @@ from flask_cors import CORS
 from config import IT_ROLES, Category, Level, CITIES, HOST, PORT, DEBUG
 from database import Database
 from parsers.data_collector import DataCollector
+from parsers.hh_resume_parser import HHResumeParser
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -76,6 +77,163 @@ def get_years():
     """Получение списка годов, за которые есть данные"""
     years = db.get_years_with_data()
     return jsonify(years)
+
+
+@app.route('/api/market/overview')
+def get_market_overview():
+    """
+    Получение обзора рынка: вакансии + резюме
+
+    Параметры:
+    - role_ids: список ID ролей
+    - levels: список уровней
+    - cities: список городов
+    - date_from: дата начала периода
+    - date_to: дата окончания периода
+    """
+    try:
+        role_ids = request.args.get('role_ids', '')
+        role_ids = [r.strip() for r in role_ids.split(',') if r.strip()] if role_ids else None
+
+        levels = request.args.get('levels', '')
+        levels = [l.strip() for l in levels.split(',') if l.strip()] if levels else None
+
+        cities = request.args.get('cities', '')
+        cities = [c.strip() for c in cities.split(',') if c.strip()] if cities else None
+
+        date_from_str = request.args.get('date_from', '')
+        date_to_str = request.args.get('date_to', '')
+
+        date_from = None
+        date_to = None
+
+        if date_from_str:
+            try:
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d')
+            except ValueError:
+                pass
+
+        if date_to_str:
+            try:
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d')
+                date_to = date_to.replace(hour=23, minute=59, second=59)
+            except ValueError:
+                pass
+
+        overview = db.get_market_overview(
+            role_ids=role_ids,
+            levels=levels,
+            cities=cities,
+            date_from=date_from,
+            date_to=date_to
+        )
+
+        return jsonify(overview)
+
+    except Exception as e:
+        logger.error(f"Ошибка получения обзора рынка: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/market/resumes')
+def get_resumes_stats():
+    """
+    Статистика по резюме
+
+    Параметры:
+    - role_ids: список ID ролей
+    - levels: список уровней
+    - cities: список городов
+    - date_from: дата начала периода
+    - date_to: дата окончания периода
+    """
+    try:
+        role_ids = request.args.get('role_ids', '')
+        role_ids = [r.strip() for r in role_ids.split(',') if r.strip()] if role_ids else None
+
+        levels = request.args.get('levels', '')
+        levels = [l.strip() for l in levels.split(',') if l.strip()] if levels else None
+
+        cities = request.args.get('cities', '')
+        cities = [c.strip() for c in cities.split(',') if c.strip()] if cities else None
+
+        date_from_str = request.args.get('date_from', '')
+        date_to_str = request.args.get('date_to', '')
+
+        date_from = None
+        date_to = None
+
+        if date_from_str:
+            try:
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d')
+            except ValueError:
+                pass
+
+        if date_to_str:
+            try:
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d')
+                date_to = date_to.replace(hour=23, minute=59, second=59)
+            except ValueError:
+                pass
+
+        stats = db.get_resume_statistics(
+            role_ids=role_ids,
+            levels=levels,
+            cities=cities,
+            date_from=date_from,
+            date_to=date_to
+        )
+
+        return jsonify(stats)
+
+    except Exception as e:
+        logger.error(f"Ошибка получения статистики резюме: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/parse-resumes', methods=['POST'])
+def parse_resumes():
+    """Запуск парсинга резюме"""
+    try:
+        data = request.get_json() or {}
+
+        role_ids = data.get('role_ids', None)
+        cities = data.get('cities', CITIES[:3])
+        pages = data.get('pages', 3)
+
+        if not role_ids:
+            role_ids = list(IT_ROLES.keys())[:5]  # По умолчанию первые 5 ролей
+
+        collected = 0
+
+        parser = HHResumeParser(delay=1.5)
+
+        for role_id in role_ids:
+            for city in cities:
+                resumes = parser.parse_resumes(
+                    role_id=role_id,
+                    city=city,
+                    pages=pages
+                )
+
+                if resumes:
+                    added = db.add_resumes_batch(resumes)
+                    collected += added
+
+        parser.close()
+
+        return jsonify({
+            'success': True,
+            'collected': collected,
+            'message': f'Собрано {collected} резюме'
+        })
+
+    except Exception as e:
+        logger.error(f"Ошибка парсинга резюме: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/api/statistics', methods=['GET'])
