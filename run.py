@@ -116,45 +116,34 @@ def run_server(host: str = '127.0.0.1', port: int = 5000, debug: bool = False):
 def show_stats():
     """Показать статистику базы данных"""
     db = Database()
-    
+
     total = db.get_vacancy_count()
     min_date, max_date = db.get_date_range()
     roles = db.get_all_roles_with_data()
     cities = db.get_all_cities_with_data()
-    
+    years = db.get_years_with_data()
+
     print("\n" + "="*50)
     print("📊 СТАТИСТИКА БАЗЫ ДАННЫХ")
     print("="*50)
     print(f"Всего вакансий: {total}")
     print(f"Диапазон дат: {min_date} - {max_date}")
+    print(f"Доступные годы: {years}")
     print(f"Ролей с данными: {len(roles)}")
     print(f"Городов: {len(cities)}")
-    
+
     if roles:
         print("\nРоли:")
         for role in sorted(roles):
             print(f"  - {role}")
-    
+
     if cities:
         print("\nГорода:")
         for city in sorted(cities):
             print(f"  - {city}")
-    
+
     print("="*50 + "\n")
-    
-    db.close()
 
-
-def clear_old_data(days: int = 90):
-    """
-    Очистка старых данных
-    
-    Args:
-        days: Удалять данные старше этого количества дней
-    """
-    db = Database()
-    deleted = db.clear_old_data(days)
-    logger.info(f"Удалено {deleted} записей старше {days} дней")
     db.close()
 
 
@@ -168,12 +157,11 @@ def main():
   python run.py parse --roles python_developer --city Москва
   python run.py server                         # Запуск веб-сервера
   python run.py stats                          # Показать статистику
-  python run.py clear --days 30                # Очистить данные старше 30 дней
         """
     )
-    
+
     subparsers = parser.add_subparsers(dest='command', help='Команды')
-    
+
     # Команда parse
     parse_parser = subparsers.add_parser('parse', help='Запуск парсинга')
     parse_parser.add_argument('--roles', nargs='+', help='ID ролей для парсинга')
@@ -181,37 +169,30 @@ def main():
     parse_parser.add_argument('--pages', type=int, default=3, help='Количество страниц')
     parse_parser.add_argument('--role', help='Парсить только одну роль')
     parse_parser.add_argument('--city', default='Москва', help='Город для одной роли')
-    
+
     # Команда server
     server_parser = subparsers.add_parser('server', help='Запуск веб-сервера')
     server_parser.add_argument('--host', default='127.0.0.1', help='Хост')
     server_parser.add_argument('--port', type=int, default=5000, help='Порт')
     server_parser.add_argument('--debug', action='store_true', help='Режим отладки')
-    
+
     # Команда stats
     subparsers.add_parser('stats', help='Показать статистику БД')
-    
-    # Команда clear
-    clear_parser = subparsers.add_parser('clear', help='Очистить старые данные')
-    clear_parser.add_argument('--days', type=int, default=90, help='Дней')
-    
+
     args = parser.parse_args()
-    
+
     if args.command == 'parse':
         if args.role:
             parse_role(args.role, args.city, args.pages)
         else:
             parse_all(args.roles, args.cities, args.pages)
-    
+
     elif args.command == 'server':
         run_server(args.host, args.port, args.debug)
-    
+
     elif args.command == 'stats':
         show_stats()
-    
-    elif args.command == 'clear':
-        clear_old_data(args.days)
-    
+
     else:
         parser.print_help()
 

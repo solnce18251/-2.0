@@ -281,25 +281,22 @@ class Database:
             return 0
         finally:
             session.close()
-    
-    def clear_old_data(self, days: int = 90):
-        """Удаление старых данных"""
+
+    def get_years_with_data(self) -> list[int]:
+        """Получение списка годов, за которые есть данные"""
         session = self.get_session()
         try:
-            cutoff_date = datetime.utcnow() - timedelta(days=days)
-            deleted = session.query(Vacancy).filter(
-                Vacancy.published_at < cutoff_date
-            ).delete(synchronize_session=False)
-            session.commit()
-            logger.info(f"Удалено {deleted} старых записей")
-            return deleted
+            result = session.query(
+                func.strftime('%Y', Vacancy.published_at)
+            ).distinct().all()
+            years = [int(row[0]) for row in result if row[0]]
+            return sorted(years)
         except Exception as e:
-            session.rollback()
-            logger.error(f"Ошибка удаления старых данных: {e}")
-            return 0
+            logger.error(f"Ошибка получения годов: {e}")
+            return []
         finally:
             session.close()
-    
+
     def close(self):
         """Закрытие соединения"""
         if self.engine:

@@ -801,6 +801,13 @@
 
                 <div class="filters-grid">
                     <div class="filter-group">
+                        <label>Год</label>
+                        <select id="year" onchange="loadData()">
+                            <option value="all">Все годы</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
                         <label>Город</label>
                         <select id="city" onchange="loadData()">
                             <option value="Россия">Россия (все)</option>
@@ -990,10 +997,31 @@
         // Инициализация
         document.addEventListener('DOMContentLoaded', function() {
             initDateRange();
+            loadYears();
             loadRoles();
             loadStatus();
             loadData();
         });
+
+        // Загрузка годов
+        async function loadYears() {
+            try {
+                const response = await fetch('/api/years');
+                const years = await response.json();
+                
+                const select = document.getElementById('year');
+                select.innerHTML = '<option value="all">Все годы</option>';
+                
+                years.forEach(year => {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки годов:', error);
+            }
+        }
 
         // Инициализация календаря
         function initDateRange() {
@@ -1116,6 +1144,7 @@
 
         // Загрузка данных
         async function loadData() {
+            const year = document.getElementById('year').value;
             const city = document.getElementById('city').value;
             const level = document.getElementById('level').value;
             const { dateFrom, dateTo } = getDateRange();
@@ -1134,10 +1163,16 @@
                 params.append('levels', level);
             }
 
-            if (dateFrom) {
+            // Фильтрация по году
+            if (year !== 'all') {
+                const startDate = `${year}-01-01`;
+                const endDate = `${year}-12-31`;
+                params.append('date_from', startDate);
+                params.append('date_to', endDate);
+            } else if (dateFrom) {
                 params.append('date_from', dateFrom);
             }
-            if (dateTo) {
+            if (dateTo && year === 'all') {
                 params.append('date_to', dateTo);
             }
 
@@ -1275,12 +1310,22 @@
                 if (city) {
                     params.append('cities', city);
                 }
-                const { dateFrom, dateTo } = getDateRange();
-                if (dateFrom) {
-                    params.append('date_from', dateFrom);
-                }
-                if (dateTo) {
-                    params.append('date_to', dateTo);
+                const year = document.getElementById('year').value;
+                
+                // Если выбран конкретный год, показываем тренд по этому году
+                if (year !== 'all') {
+                    const startDate = `${year}-01-01`;
+                    const endDate = `${year}-12-31`;
+                    params.append('date_from', startDate);
+                    params.append('date_to', endDate);
+                } else {
+                    const { dateFrom, dateTo } = getDateRange();
+                    if (dateFrom) {
+                        params.append('date_from', dateFrom);
+                    }
+                    if (dateTo) {
+                        params.append('date_to', dateTo);
+                    }
                 }
 
                 const response = await fetch('/api/statistics/trend?' + params.toString());
@@ -1340,12 +1385,22 @@
                 if (city) {
                     params.append('cities', city);
                 }
-                const { dateFrom, dateTo } = getDateRange();
-                if (dateFrom) {
-                    params.append('date_from', dateFrom);
-                }
-                if (dateTo) {
-                    params.append('date_to', dateTo);
+                const year = document.getElementById('year').value;
+                
+                // Фильтрация по году
+                if (year !== 'all') {
+                    const startDate = `${year}-01-01`;
+                    const endDate = `${year}-12-31`;
+                    params.append('date_from', startDate);
+                    params.append('date_to', endDate);
+                } else {
+                    const { dateFrom, dateTo } = getDateRange();
+                    if (dateFrom) {
+                        params.append('date_from', dateFrom);
+                    }
+                    if (dateTo) {
+                        params.append('date_to', dateTo);
+                    }
                 }
 
                 const response = await fetch('/api/statistics/roles-compare?' + params.toString());
@@ -1401,6 +1456,7 @@
         // Сброс фильтров
         function resetFilters() {
             setPresetDate('7d', document.querySelector('.preset-btn'));
+            document.getElementById('year').value = 'all';
             document.getElementById('city').value = 'Россия';
             document.getElementById('level').value = 'all';
             selectedRoles = [];

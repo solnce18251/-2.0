@@ -71,6 +71,13 @@ def get_cities():
     return jsonify(cities_list)
 
 
+@app.route('/api/years')
+def get_years():
+    """Получение списка годов, за которые есть данные"""
+    years = db.get_years_with_data()
+    return jsonify(years)
+
+
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
     """
