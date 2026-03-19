@@ -712,13 +712,44 @@
         }
 
         /* Responsive */
+        
+        /* Мобильные устройства (до 768px) */
         @media (max-width: 768px) {
+            .container {
+                padding: 0 16px;
+            }
+
             .header-content {
-                gap: 16px;
+                gap: 12px;
+            }
+
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+            }
+
+            .logo-text .company {
+                font-size: 1rem;
+            }
+
+            .logo-text .division {
+                font-size: 0.7rem;
+            }
+
+            .header-title {
+                display: none !important;
             }
 
             .page-title {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
+            }
+
+            .page-subtitle {
+                font-size: 0.95rem;
+            }
+
+            .filters-panel {
+                padding: 16px;
             }
 
             .charts-grid {
@@ -727,6 +758,7 @@
 
             .filters-grid {
                 grid-template-columns: 1fr;
+                gap: 16px;
             }
 
             .date-range-picker {
@@ -734,8 +766,26 @@
                 align-items: stretch;
             }
 
+            .date-input-group {
+                width: 100%;
+            }
+
             .date-input-group input[type="date"] {
                 width: 100%;
+                min-width: auto;
+            }
+
+            .preset-dates {
+                justify-content: center;
+            }
+
+            .preset-btn {
+                font-size: 0.8rem;
+                padding: 6px 12px;
+            }
+
+            .checkbox-group {
+                max-height: 120px;
             }
 
             .buttons-row {
@@ -745,6 +795,191 @@
             .btn {
                 width: 100%;
                 justify-content: center;
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .stat-card {
+                padding: 16px 12px;
+            }
+
+            .stat-card .value {
+                font-size: 1.5rem;
+            }
+
+            .stat-card .label {
+                font-size: 0.7rem;
+            }
+
+            .stat-card .sublabel {
+                font-size: 0.65rem;
+            }
+
+            .chart-container {
+                padding: 16px;
+            }
+
+            .chart-title h3 {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.2rem;
+            }
+
+            .roles-compare-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Модальные окна */
+            .parse-modal-content {
+                padding: 24px;
+                width: 95%;
+            }
+
+            .parse-modal-content h3 {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Планшеты (768px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                max-width: 100%;
+                padding: 0 20px;
+            }
+
+            .header-content {
+                gap: 20px;
+            }
+
+            .page-title {
+                font-size: 1.7rem;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-card .value {
+                font-size: 1.8rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .chart-container.full-width {
+                grid-column: 1 / -1;
+            }
+        }
+
+        /* Большие экраны (1024px - 1440px) */
+        @media (min-width: 1025px) and (max-width: 1440px) {
+            .container {
+                max-width: 1200px;
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Очень большие экраны (более 1440px) */
+        @media (min-width: 1441px) {
+            .container {
+                max-width: 1400px;
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .charts-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Маленькие мобильные (до 375px) */
+        @media (max-width: 375px) {
+            .page-title {
+                font-size: 1.2rem;
+            }
+
+            .page-subtitle {
+                font-size: 0.85rem;
+            }
+
+            .logo-icon {
+                width: 36px;
+                height: 36px;
+            }
+
+            .logo-text .company {
+                font-size: 0.9rem;
+            }
+
+            .preset-dates {
+                flex-direction: column;
+            }
+
+            .preset-btn {
+                width: 100%;
+            }
+
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Пейзажная ориентация на мобильных */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .page-header {
+                margin-bottom: 20px;
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .filters-panel {
+                padding: 16px;
+            }
+        }
+
+        /* Печать */
+        @media print {
+            .header,
+            .filters-panel,
+            .buttons-row,
+            .parse-modal,
+            .status-bar {
+                display: none !important;
+            }
+
+            .main {
+                padding: 0;
+            }
+
+            .page-title {
+                font-size: 18pt;
+            }
+
+            .chart-container {
+                page-break-inside: avoid;
             }
         }
     </style>
