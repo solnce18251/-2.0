@@ -362,7 +362,11 @@ def get_statistics():
         # Обработка фильтра "Регионы" (все города кроме Москвы)
         if cities and 'Регионы' in cities:
             from config import CITIES
+            # Для регионов берем все города из базы кроме Москвы
             cities = [c for c in CITIES if c != 'Москва']
+            # Добавляем "Россия" как общий вариант
+            if 'Россия' not in cities:
+                cities.append('Россия')
 
         # Обработка дат из календаря
         date_from = None
