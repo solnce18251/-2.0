@@ -8,8 +8,12 @@ from flask_cors import CORS
 
 from config import IT_ROLES, Category, Level, CITIES, HOST, PORT, DEBUG
 from database import Database
+from models.market import Resume
 from parsers.data_collector import DataCollector
 from parsers.hh_resume_parser import HHResumeParser
+import os
+import pandas as pd
+from werkzeug.utils import secure_filename
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,8 +21,21 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)
 
+# Конфигурация для загрузки файлов
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv'}
+
 # Инициализация базы данных
 db = Database()
+
+# Создание папки для загрузок
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+def allowed_file(filename):
+    """Проверка расширения файла"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @app.route('/')
@@ -230,6 +247,89 @@ def parse_resumes():
 
     except Exception as e:
         logger.error(f"Ошибка парсинга резюме: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/import-resumes', methods=['POST'])
+def import_resumes():
+    """
+    Импорт резюме из Excel/CSV файла
+    
+    Формат данных:
+    - Файл: .xlsx, .xls, .csv
+    - Колонки: Должность, Зарплата от, Зарплата до, Город, Опыт работы, Уровень, Навыки, Дата публикации
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'File type not allowed. Allowed: xlsx, xls, csv'}), 400
+        
+        # Сохранение файла
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Чтение файла
+        if filename.endswith('.csv'):
+            df = pd.read_csv(filepath)
+        else:
+            df = pd.read_excel(filepath)
+        
+        logger.info(f"Загружено {len(df)} строк из файла {filename}")
+        
+        # Импорт в базу
+        from import_resumes import map_role_id, map_level, parse_date
+        
+        imported_count = 0
+        
+        for idx, row in df.iterrows():
+            try:
+                resume = Resume(
+                    title=str(row.get('Должность', row.get('Position', ''))),
+                    salary_min=int(row.get('Зарплата от', row.get('Salary Min', 0))) or None,
+                    salary_max=int(row.get('Зарплата до', row.get('Salary Max', 0))) or None,
+                    currency='RUB',
+                    city=str(row.get('Город', row.get('City', 'Москва'))),
+                    experience_years=int(row.get('Опыт работы (лет)', row.get('Experience', 0))) or 0,
+                    experience_description=str(row.get('Описание опыта', '')),
+                    role_id=map_role_id(row.get('Должность', '')),
+                    level=map_level(row.get('Уровень', row.get('Level', ''))),
+                    skills=str(row.get('Навыки', row.get('Skills', ''))),
+                    source='hr_analyst_import',
+                    url=str(row.get('Ссылка', row.get('URL', ''))),
+                    published_at=parse_date(row.get('Дата публикации', row.get('Date', ''))),
+                    updated_at=datetime.utcnow(),
+                )
+                
+                db.add_resumes_batch([resume])  # Используем метод для резюме
+                imported_count += 1
+                
+            except Exception as e:
+                logger.error(f"Ошибка при импорте строки {idx}: {e}")
+                continue
+        
+        # Удаление файла после импорта
+        os.remove(filepath)
+        
+        return jsonify({
+            'success': True,
+            'imported': imported_count,
+            'total': len(df),
+            'message': f'Импортировано {imported_count} из {len(df)} резюме'
+        })
+        
+    except Exception as e:
+        logger.error(f"Ошибка импорта: {e}")
         return jsonify({
             'success': False,
             'error': str(e)

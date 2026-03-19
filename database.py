@@ -37,10 +37,17 @@ class Database:
             )
         else:
             self.engine = create_engine(self.db_url, echo=False)
+
+        # Создание всех таблиц
+        from models.vacancy import Base as VacancyBase
+        from models.market import Base as MarketBase
         
-        # Создание таблиц
-        Base.metadata.create_all(bind=self.engine)
+        # Импортируем модели для регистрации в metadata
+        from models import Vacancy, Resume, VacancyStatistic, ResumeStatistic
         
+        VacancyBase.metadata.create_all(bind=self.engine)
+        MarketBase.metadata.create_all(bind=self.engine)
+
         self.SessionLocal = sessionmaker(
             autocommit=False,
             autoflush=False,

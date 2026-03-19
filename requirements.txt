@@ -8,6 +8,8 @@ webdriver-manager==4.0.1
 # Работа с данными
 pandas==2.2.1
 numpy==1.26.4
+openpyxl==3.1.2
+xlrd==2.0.1
 
 # База данных
 sqlalchemy==2.0.28

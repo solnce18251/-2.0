@@ -890,6 +890,12 @@
                         </svg>
                         Сравнение ролей
                     </button>
+                    <button class="btn btn-secondary" onclick="showImportModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                        Импорт резюме
+                    </button>
                 </div>
             </div>
 
@@ -1038,6 +1044,52 @@
                     Начать парсинг
                 </button>
                 <button class="btn btn-secondary" onclick="hideParseModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="parse-modal" id="import-modal">
+        <div class="parse-modal-content">
+            <h3>📥 Импорт резюме</h3>
+            <p>Загрузите данные из Excel/CSV файла от HR-аналитика</p>
+
+            <div class="filter-section">
+                <div class="filter-label">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    Файл данных
+                </div>
+                <input type="file" id="import-file" accept=".xlsx,.xls,.csv" 
+                       style="width: 100%; padding: 12px; border: 1px solid var(--border-primary); 
+                              border-radius: 10px; background: var(--bg-tertiary); 
+                              color: var(--text-primary); margin-top: 10px;">
+                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">
+                    Поддерживаемые форматы: .xlsx, .xls, .csv
+                </p>
+            </div>
+
+            <div class="parse-progress">
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="import-progress"></div>
+                </div>
+                <p id="import-status">Ожидание...</p>
+            </div>
+
+            <div class="buttons-row">
+                <button class="btn btn-primary" onclick="startImport()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                    </svg>
+                    Загрузить
+                </button>
+                <button class="btn btn-secondary" onclick="hideImportModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -1618,6 +1670,74 @@
             document.getElementById('parse-modal').classList.remove('active');
             document.getElementById('parse-progress').style.width = '0%';
             document.getElementById('parse-status').textContent = 'Ожидание...';
+        }
+
+        // Показать модальное окно импорта
+        function showImportModal() {
+            document.getElementById('import-modal').classList.add('active');
+        }
+
+        // Скрыть модальное окно импорта
+        function hideImportModal() {
+            document.getElementById('import-modal').classList.remove('active');
+            document.getElementById('import-progress').style.width = '0%';
+            document.getElementById('import-status').textContent = 'Ожидание...';
+        }
+
+        // Начать импорт
+        async function startImport() {
+            const fileInput = document.getElementById('import-file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Выберите файл для загрузки');
+                return;
+            }
+
+            const btn = event.target.closest('button');
+            btn.disabled = true;
+
+            try {
+                const progress = document.getElementById('import-progress');
+                const status = document.getElementById('import-status');
+
+                progress.style.width = '30%';
+                status.textContent = 'Загрузка файла...';
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                progress.style.width = '50%';
+                status.textContent = 'Обработка данных...';
+
+                const response = await fetch('/api/import-resumes', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                progress.style.width = '80%';
+
+                const result = await response.json();
+
+                if (result.success) {
+                    progress.style.width = '100%';
+                    status.textContent = `Готово! Импортировано ${result.imported} из ${result.total} резюме`;
+                    
+                    setTimeout(() => {
+                        hideImportModal();
+                        loadStatus();
+                        updateMarketOverview();
+                    }, 2000);
+                } else {
+                    throw new Error(result.error || 'Ошибка импорта');
+                }
+
+            } catch (error) {
+                console.error('Ошибка импорта:', error);
+                document.getElementById('import-status').textContent = 'Ошибка: ' + error.message;
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         // Начать парсинг
