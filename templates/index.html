@@ -465,6 +465,34 @@
             margin-top: 6px;
         }
 
+        /* Change Indicator */
+        .change-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .change-indicator svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .change-up {
+            color: var(--success);
+        }
+
+        .change-down {
+            color: var(--danger);
+        }
+
+        .change-neutral {
+            color: var(--text-muted);
+        }
+
         /* Charts */
         .charts-grid {
             display: grid;
@@ -868,24 +896,28 @@
             <!-- Stats Cards -->
             <div class="stats-cards" id="stats-cards">
                 <div class="stat-card">
-                    <div class="value">-</div>
+                    <div class="value" id="stat-p25">-</div>
                     <div class="label">Мин (P25)</div>
                     <div class="sublabel">25-й персентиль</div>
+                    <div class="change-indicator" id="change-p25"></div>
                 </div>
                 <div class="stat-card">
-                    <div class="value">-</div>
+                    <div class="value" id="stat-median">-</div>
                     <div class="label">Медиана</div>
                     <div class="sublabel">50-й персентиль</div>
+                    <div class="change-indicator" id="change-median"></div>
                 </div>
                 <div class="stat-card">
-                    <div class="value">-</div>
+                    <div class="value" id="stat-p75">-</div>
                     <div class="label">Макс (P75)</div>
                     <div class="sublabel">75-й персентиль</div>
+                    <div class="change-indicator" id="change-p75"></div>
                 </div>
                 <div class="stat-card">
-                    <div class="value">-</div>
+                    <div class="value" id="stat-average">-</div>
                     <div class="label">Средняя</div>
-                    <div class="sublabel">Вакансий найдено</div>
+                    <div class="sublabel" id="stat-count">Вакансий найдено</div>
+                    <div class="change-indicator" id="change-count"></div>
                 </div>
             </div>
 
@@ -1180,7 +1212,7 @@
                 const response = await fetch('/api/statistics?' + params.toString());
                 const data = await response.json();
 
-                updateStatsCards(data.overall);
+                updateStatsCards(data.overall, data.changes || {});
                 updateLevelChart(data.by_level);
                 updateCityChart(data.by_city);
                 updateTrendChart();
@@ -1191,22 +1223,48 @@
         }
 
         // Обновление карточек
-        function updateStatsCards(stats) {
-            const cards = document.querySelectorAll('#stats-cards .stat-card');
+        function updateStatsCards(stats, changes = {}) {
+            // P25
+            document.getElementById('stat-p25').textContent = formatSalary(stats.p25);
+            updateChangeIndicator('change-p25', changes.p25);
+            
+            // Median
+            document.getElementById('stat-median').textContent = formatSalary(stats.median);
+            updateChangeIndicator('change-median', changes.median);
+            
+            // P75
+            document.getElementById('stat-p75').textContent = formatSalary(stats.p75);
+            updateChangeIndicator('change-p75', changes.p75);
+            
+            // Average
+            document.getElementById('stat-average').textContent = formatSalary(stats.average);
+            document.getElementById('stat-count').textContent = `Вакансий: ${stats.count}`;
+            updateChangeIndicator('change-count', changes.count);
+        }
 
-            if (stats.count === 0) {
-                cards[0].querySelector('.value').textContent = '-';
-                cards[1].querySelector('.value').textContent = '-';
-                cards[2].querySelector('.value').textContent = '-';
-                cards[3].querySelector('.value').textContent = '0';
+        // Обновление индикатора изменений
+        function updateChangeIndicator(elementId, changePercent) {
+            const element = document.getElementById(elementId);
+            
+            if (changePercent === undefined || changePercent === null) {
+                element.innerHTML = '';
                 return;
             }
-
-            cards[0].querySelector('.value').textContent = formatSalary(stats.p25);
-            cards[1].querySelector('.value').textContent = formatSalary(stats.median);
-            cards[2].querySelector('.value').textContent = formatSalary(stats.p75);
-            cards[3].querySelector('.value').textContent = formatSalary(stats.average);
-            cards[3].querySelector('.sublabel').textContent = `Вакансий: ${stats.count}`;
+            
+            const isPositive = changePercent >= 0;
+            const absPercent = Math.abs(changePercent);
+            const arrow = isPositive ? '↑' : '↓';
+            const sign = isPositive ? '+' : '';
+            
+            // SVG иконка
+            const arrowSvg = isPositive 
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>';
+            
+            const className = changePercent === 0 ? 'change-neutral' : (isPositive ? 'change-up' : 'change-down');
+            
+            element.className = `change-indicator ${className}`;
+            element.innerHTML = `${arrowSvg} ${sign}${absPercent}%`;
         }
 
         // Форматирование зарплаты

@@ -158,8 +158,51 @@ def get_statistics():
                 if city_stat.get('count', 0) > 0:
                     city_stats[city] = city_stat
 
+        # Получение данных за предыдущий период для сравнения
+        prev_stats = {}
+        if date_from and date_to:
+            period_days = (date_to - date_from).days + 1
+            prev_date_from = date_from - timedelta(days=period_days)
+            prev_date_to = date_from - timedelta(days=1)
+            
+            prev_stats = db.get_salary_statistics(
+                role_ids=role_ids,
+                levels=levels,
+                cities=cities,
+                date_from=prev_date_from,
+                date_to=prev_date_to
+            )
+        elif date_from:
+            # Если только date_from, берём такой же период до
+            period_days = 30  # По умолчанию 30 дней
+            prev_date_from = date_from - timedelta(days=period_days)
+            prev_date_to = date_from - timedelta(days=1)
+            
+            prev_stats = db.get_salary_statistics(
+                role_ids=role_ids,
+                levels=levels,
+                cities=cities,
+                date_from=prev_date_from,
+                date_to=prev_date_to
+            )
+
+        # Расчёт изменений в процентах
+        changes = {}
+        if prev_stats.get('count', 0) > 0 and stats.get('count', 0) > 0:
+            for key in ['median', 'average', 'p25', 'p75', 'min', 'max']:
+                if stats.get(key) and prev_stats.get(key):
+                    change = ((stats[key] - prev_stats[key]) / prev_stats[key]) * 100
+                    changes[key] = round(change, 2)
+        
+        # Изменение количества вакансий
+        if prev_stats.get('count', 0) > 0:
+            change_count = ((stats['count'] - prev_stats['count']) / prev_stats['count']) * 100
+            changes['count'] = round(change_count, 2)
+
         return jsonify({
             'overall': stats,
+            'previous_period': prev_stats,
+            'changes': changes,
             'by_level': level_stats,
             'by_city': city_stats,
             'filters': {
