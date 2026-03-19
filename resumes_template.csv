@@ -1,0 +1,10 @@
+Должность,Зарплата от,Зарплата до,Город,Опыт работы (лет),Уровень,Навыки,Дата публикации
+Python разработчик,150000,250000,Москва,3,Middle,"Python, Django, SQL, PostgreSQL, Git",2024-01-15
+Java разработчик,180000,300000,Санкт-Петербург,5,Senior,"Java, Spring, Kafka, Docker, Kubernetes",2024-01-10
+Frontend разработчик,140000,220000,Москва,2,Middle,"JavaScript, React, TypeScript, HTML, CSS",2024-01-12
+DevOps инженер,200000,350000,Екатеринбург,4,Senior,"Docker, Kubernetes, CI/CD, AWS, Terraform",2024-01-08
+QA инженер,100000,180000,Москва,2,Middle,"Python, Pytest, Selenium, CI/CD, Git",2024-01-14
+Системный аналитик,160000,280000,Санкт-Петербург,4,Senior,"SQL, UML, BPMN, REST API, Swagger",2024-01-11
+UI/UX дизайнер,130000,200000,Москва,3,Middle,"Figma, Adobe XD, Sketch, Prototyping",2024-01-09
+Product Owner,220000,400000,Москва,6,Senior,"Agile, Scrum, Product Management, Analytics",2024-01-07
+Team Lead,250000,450000,Санкт-Петербург,7,Team Lead,"Leadership, Architecture, Code Review, Mentoring",2024-01-05
