@@ -33,18 +33,47 @@
             box-sizing: border-box;
         }
 
+        /* Базовые стили для предотвращения съезжания */
+        html {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             background: var(--bg-primary);
             min-height: 100vh;
             color: var(--text-primary);
             line-height: 1.6;
+            overflow-x: hidden;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        /* Предотвращение горизонтальной прокрутки */
+        img, svg, video, canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Блокировка переполнения */
+        .container, .header, .main, .filters-panel {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Предотвращение выхода текста за границы */
+        body, .container, .header-content, .logo-text, .page-title, .page-subtitle {
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+            hyphens: auto;
         }
 
         .container {
             max-width: 1440px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 20px;
+            width: 100%;
         }
 
         /* Header */
@@ -715,17 +744,29 @@
         
         /* Мобильные устройства (до 768px) */
         @media (max-width: 768px) {
+            * {
+                max-width: 100vw;
+            }
+
             .container {
                 padding: 0 16px;
+                width: 100%;
             }
 
             .header-content {
                 gap: 12px;
+                flex-wrap: wrap;
             }
 
             .logo-icon {
                 width: 40px;
                 height: 40px;
+                flex-shrink: 0;
+            }
+
+            .logo-text {
+                font-size: 1rem;
+                max-width: 200px;
             }
 
             .logo-text .company {
@@ -742,28 +783,34 @@
 
             .page-title {
                 font-size: 1.4rem;
+                width: 100%;
             }
 
             .page-subtitle {
                 font-size: 0.95rem;
+                width: 100%;
             }
 
             .filters-panel {
                 padding: 16px;
+                width: 100%;
             }
 
             .charts-grid {
                 grid-template-columns: 1fr;
+                width: 100%;
             }
 
             .filters-grid {
                 grid-template-columns: 1fr;
                 gap: 16px;
+                width: 100%;
             }
 
             .date-range-picker {
                 flex-direction: column;
                 align-items: stretch;
+                width: 100%;
             }
 
             .date-input-group {
@@ -773,77 +820,102 @@
             .date-input-group input[type="date"] {
                 width: 100%;
                 min-width: auto;
+                max-width: 100%;
             }
 
             .preset-dates {
                 justify-content: center;
+                width: 100%;
             }
 
             .preset-btn {
-                font-size: 0.8rem;
-                padding: 6px 12px;
+                font-size: 0.75rem;
+                padding: 6px 10px;
+                white-space: nowrap;
             }
 
             .checkbox-group {
                 max-height: 120px;
+                width: 100%;
             }
 
             .buttons-row {
                 flex-direction: column;
+                width: 100%;
             }
 
             .btn {
                 width: 100%;
                 justify-content: center;
                 padding: 12px 20px;
-                font-size: 0.9rem;
+                font-size: 0.85rem;
+                white-space: normal;
+                word-wrap: break-word;
             }
 
             .stats-cards {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 12px;
+                width: 100%;
             }
 
             .stat-card {
                 padding: 16px 12px;
+                min-width: 0;
             }
 
             .stat-card .value {
-                font-size: 1.5rem;
+                font-size: 1.3rem;
+                word-break: break-word;
             }
 
             .stat-card .label {
-                font-size: 0.7rem;
+                font-size: 0.65rem;
+                white-space: nowrap;
             }
 
             .stat-card .sublabel {
-                font-size: 0.65rem;
+                font-size: 0.6rem;
+                white-space: nowrap;
             }
 
             .chart-container {
                 padding: 16px;
+                width: 100%;
+                min-width: 0;
             }
 
             .chart-title h3 {
-                font-size: 1rem;
+                font-size: 0.95rem;
+                word-break: break-word;
             }
 
             .section-title {
                 font-size: 1.2rem;
+                word-break: break-word;
             }
 
             .roles-compare-grid {
                 grid-template-columns: 1fr;
+                width: 100%;
             }
 
             /* Модальные окна */
             .parse-modal-content {
                 padding: 24px;
                 width: 95%;
+                max-width: 95%;
             }
 
             .parse-modal-content h3 {
                 font-size: 1.1rem;
+                word-break: break-word;
+            }
+
+            /* Графики Plotly */
+            #trend-chart, #level-chart, #city-chart {
+                width: 100% !important;
+                min-width: 0;
             }
         }
 
